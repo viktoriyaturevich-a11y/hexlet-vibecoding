@@ -16,6 +16,18 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="IELTS Boost: готовьтесь к IELTS по 20 минут в день">
   <meta name="twitter:card" content="summary_large_image">
+  <script>
+    // Тему ставим до отрисовки страницы, чтобы не было вспышки светлого фона.
+    // Сначала смотрим сохранённый выбор, иначе — тему системы.
+    (function () {
+      let theme = null;
+      try { theme = localStorage.getItem('theme'); } catch (e) {}
+      if (theme !== 'light' && theme !== 'dark') {
+        theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <style>
     :root {
       --bg: #f6f7fb;
@@ -26,18 +38,20 @@
       --accent: #3b5bdb;
       --accent-soft: #e7ecff;
       --error: #c0392b;
+      --on-accent: #ffffff;
+      color-scheme: light;
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #14171c;
-        --card: #1d2128;
-        --text: #e8ebf0;
-        --muted: #9aa3b2;
-        --border: #333a45;
-        --accent: #8ea4ff;
-        --accent-soft: #232a45;
-        --error: #ff7b6b;
-      }
+    :root[data-theme="dark"] {
+      --bg: #14171c;
+      --card: #1d2128;
+      --text: #e8ebf0;
+      --muted: #9aa3b2;
+      --border: #333a45;
+      --accent: #8ea4ff;
+      --accent-soft: #232a45;
+      --error: #ff7b6b;
+      --on-accent: #14171c;
+      color-scheme: dark;
     }
 
     * { box-sizing: border-box; }
@@ -47,6 +61,7 @@
       color: var(--text);
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       line-height: 1.5;
+      transition: background-color .2s, color .2s;
     }
     main { max-width: 720px; margin: 0 auto; padding: 48px 16px 64px; }
 
@@ -89,13 +104,29 @@
       font: inherit;
       font-weight: 600;
       background: var(--accent);
-      color: #fff;
+      color: var(--on-accent);
       border: 0;
       border-radius: 10px;
       padding: 12px 28px;
       cursor: pointer;
     }
-    @media (prefers-color-scheme: dark) { button { color: #14171c; } }
+
+    .theme-toggle {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border-radius: 50%;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 1.25rem;
+      line-height: 1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .12);
+    }
     button:hover { opacity: .9; }
 
     form, .thanks {
@@ -123,6 +154,8 @@
   </style>
 </head>
 <body>
+  <button type="button" class="theme-toggle" id="theme-toggle"></button>
+
   <main>
     <section class="hero">
       <div class="logo">IELTS Boost</div>
@@ -196,6 +229,23 @@
   </main>
 
   <script>
+    const themeToggle = document.getElementById('theme-toggle');
+
+    function updateThemeToggle() {
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      themeToggle.title = isDark ? 'Включить светлую тему' : 'Включить тёмную тему';
+      themeToggle.setAttribute('aria-label', themeToggle.title);
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      updateThemeToggle();
+    });
+    updateThemeToggle();
+
     const moreBtn = document.getElementById('more-btn');
     const form = document.getElementById('lead-form');
     const thanks = document.getElementById('thanks');
