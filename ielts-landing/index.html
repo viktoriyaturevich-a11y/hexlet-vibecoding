@@ -125,6 +125,24 @@
     .exercise h3 { font-size: 1rem; margin: 0 0 4px; }
     .exercise p { margin: 0; color: var(--muted); font-size: .95rem; }
 
+    .ya-form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+    /* Форма Яндекса тянется на всю ширину колонки и не вылезает за макет */
+    .ya-form iframe {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      min-height: 400px;
+      border: 0;
+      border-radius: 8px;
+    }
+
     .cta { text-align: center; }
     button {
       font: inherit;
@@ -190,6 +208,11 @@
         <li>Мы верим, что регулярная короткая практика работает лучше редкой зубрёжки.</li>
         <li>Мы даём честную обратную связь, чтобы вы видели реальный прогресс к нужному баллу.</li>
       </ul>
+    </section>
+
+    <section class="ya-form">
+      <script src="https://forms.yandex.ru/_static/embed.js"></script>
+      <iframe src="https://forms.yandex.ru/u/6ae4aed695add507843126a6?iframe=1" name="ya-form-6ae4aed695add507843126a6" title="Форма заявки IELTS Boost"></iframe>
     </section>
 
     <section>
