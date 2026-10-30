@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Калькулятор калорий</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1d2330;
+      --muted: #667085;
+      --border: #d9dee7;
+      --accent: #2f7d5b;
+      --accent-soft: #e5f2ec;
+      --error: #c0392b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14171c;
+        --card: #1d2128;
+        --text: #e8ebf0;
+        --muted: #9aa3b2;
+        --border: #333a45;
+        --accent: #5cc095;
+        --accent-soft: #1f3329;
+        --error: #ff7b6b;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+    }
+    main { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; }
+    h1 { font-size: 1.75rem; margin: 0 0 4px; }
+    .subtitle { color: var(--muted); margin: 0 0 24px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid > * { min-width: 0; }
+    .full { grid-column: 1 / -1; }
+    label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .segmented { display: flex; gap: 8px; }
+    .segmented label {
+      position: relative;
+      flex: 1;
+      margin: 0;
+      text-align: center;
+      font-weight: 500;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .segmented input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+    .segmented label:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+
+    .error { color: var(--error); margin: 12px 0 0; min-height: 1.5em; }
+
+    .result[hidden] { display: none; }
+    .big { font-size: 2.5rem; font-weight: 700; color: var(--accent); margin: 0; }
+    .muted { color: var(--muted); font-size: 0.9rem; }
+    .rows { display: grid; gap: 8px; margin-top: 16px; }
+    .row { display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 8px; }
+    .row b { font-variant-numeric: tabular-nums; }
+
+    @media (max-width: 420px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Калькулятор калорий</h1>
+    <p class="subtitle">Сколько калорий нужно в день, чтобы худеть, держать вес или набирать.</p>
+
+    <form id="form" class="card" novalidate>
+      <div class="grid">
+        <div class="full">
+          <label>Пол</label>
+          <div class="segmented">
+            <label><input type="radio" name="sex" value="female" checked> Женский</label>
+            <label><input type="radio" name="sex" value="male"> Мужской</label>
+          </div>
+        </div>
+
+        <div>
+          <label for="age">Возраст, лет</label>
+          <input id="age" type="number" inputmode="numeric" min="15" max="100" placeholder="30">
+        </div>
+        <div>
+          <label for="height">Рост, см</label>
+          <input id="height" type="number" inputmode="numeric" min="120" max="230" placeholder="165">
+        </div>
+        <div class="full">
+          <label for="weight">Вес, кг</label>
+          <input id="weight" type="number" inputmode="decimal" min="30" max="300" step="0.1" placeholder="60">
+        </div>
+
+        <div class="full">
+          <label for="activity">Активность</label>
+          <select id="activity">
+            <option value="1.2">Минимальная — сидячая работа, без спорта</option>
+            <option value="1.375" selected>Низкая — тренировки 1–3 раза в неделю</option>
+            <option value="1.55">Средняя — тренировки 3–5 раз в неделю</option>
+            <option value="1.725">Высокая — тренировки 6–7 раз в неделю</option>
+            <option value="1.9">Очень высокая — физическая работа + спорт</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label for="goal">Цель</label>
+          <select id="goal">
+            <option value="-0.15">Похудеть (−15%)</option>
+            <option value="0" selected>Поддерживать вес</option>
+            <option value="0.1">Набрать массу (+10%)</option>
+          </select>
+        </div>
+
+        <div class="full"><button type="submit">Рассчитать</button></div>
+      </div>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+
+    <section id="result" class="card result" hidden aria-live="polite">
+      <p class="muted">Ваша норма в день</p>
+      <p class="big"><span id="calories">0</span> ккал</p>
+      <div class="rows">
+        <div class="row"><span>Белки</span><b id="protein">0 г</b></div>
+        <div class="row"><span>Жиры</span><b id="fat">0 г</b></div>
+        <div class="row"><span>Углеводы</span><b id="carbs">0 г</b></div>
+        <div class="row"><span>Базовый обмен (в покое)</span><b id="bmr">0 ккал</b></div>
+      </div>
+      <p class="muted">Расчёт по формуле Миффлина — Сан Жеора. Это ориентир, а не медицинская рекомендация.</p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const errorEl = document.getElementById('error');
+    const resultEl = document.getElementById('result');
+
+    const limits = {
+      age: [15, 100, 'Возраст'],
+      height: [120, 230, 'Рост'],
+      weight: [30, 300, 'Вес'],
+    };
+
+    function readNumber(id) {
+      const [min, max, name] = limits[id];
+      const value = parseFloat(document.getElementById(id).value.replace(',', '.'));
+      if (Number.isNaN(value)) throw new Error(`Заполните поле «${name}».`);
+      if (value < min || value > max) throw new Error(`${name}: допустимо от ${min} до ${max}.`);
+      return value;
+    }
+
+    // Формула Миффлина — Сан Жеора: калории, которые тело тратит в покое.
+    function calcBmr(sex, weight, height, age) {
+      const base = 10 * weight + 6.25 * height - 5 * age;
+      return sex === 'male' ? base + 5 : base - 161;
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      errorEl.textContent = '';
+
+      let age, height, weight;
+      try {
+        age = readNumber('age');
+        height = readNumber('height');
+        weight = readNumber('weight');
+      } catch (e) {
+        errorEl.textContent = e.message;
+        resultEl.hidden = true;
+        return;
+      }
+
+      const sex = form.querySelector('input[name="sex"]:checked').value;
+      const activity = parseFloat(document.getElementById('activity').value);
+      const goal = parseFloat(document.getElementById('goal').value);
+
+      const bmr = calcBmr(sex, weight, height, age);
+      const calories = Math.round(bmr * activity * (1 + goal));
+
+      // Белок 1.8 г/кг, жиры 0.9 г/кг, остальное — углеводы (1 г белка/углеводов = 4 ккал, жира = 9 ккал).
+      const protein = Math.round(weight * 1.8);
+      const fat = Math.round(weight * 0.9);
+      const carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
+
+      document.getElementById('calories').textContent = calories.toLocaleString('ru-RU');
+      document.getElementById('protein').textContent = `${protein} г`;
+      document.getElementById('fat').textContent = `${fat} г`;
+      document.getElementById('carbs').textContent = `${carbs} г`;
+      document.getElementById('bmr').textContent = `${Math.round(bmr).toLocaleString('ru-RU')} ккал`;
+      resultEl.hidden = false;
+    });
+  </script>
+</body>
+</html>
