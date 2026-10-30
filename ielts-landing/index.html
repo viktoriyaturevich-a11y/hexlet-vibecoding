@@ -63,10 +63,29 @@
       line-height: 1.5;
     }
 
-    /* Плавная смена цветов при переключении темы */
+    /* Запасной вариант для старых браузеров: цвета плавно перетекают на месте */
     *, *::before, *::after {
       transition: background-color .4s ease, color .4s ease, border-color .4s ease, box-shadow .4s ease;
     }
+    .theme-wipe *, .theme-wipe *::before, .theme-wipe *::after { transition: none !important; }
+
+    /* Новая тема наползает справа налево, граница между темами — мягкий градиент.
+       Маска втрое шире экрана: слева прозрачная, справа непрозрачная, и её сдвигают влево. */
+    ::view-transition-old(root) { animation: none; }
+    ::view-transition-new(root) {
+      animation: theme-wipe .9s ease-in-out;
+      -webkit-mask-image: linear-gradient(to right, transparent 41%, #000 59%);
+      mask-image: linear-gradient(to right, transparent 41%, #000 59%);
+      -webkit-mask-size: 300% 100%;
+      mask-size: 300% 100%;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+    }
+    @keyframes theme-wipe {
+      from { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+      to { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition: none; }
     }
@@ -245,11 +264,27 @@
       themeToggle.setAttribute('aria-label', themeToggle.title);
     }
 
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      try { localStorage.setItem('theme', theme); } catch (e) {}
+      updateThemeToggle();
+    }
+
     themeToggle.addEventListener('click', () => {
       const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      try { localStorage.setItem('theme', next); } catch (e) {}
-      updateThemeToggle();
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Браузер без View Transitions или пользователь просит меньше анимации
+      if (!document.startViewTransition || reduceMotion) {
+        applyTheme(next);
+        return;
+      }
+
+      // Во время «шторки» обычные плавные переходы отключаем, чтобы эффекты не смешивались
+      const root = document.documentElement;
+      root.classList.add('theme-wipe');
+      const transition = document.startViewTransition(() => applyTheme(next));
+      transition.finished.finally(() => root.classList.remove('theme-wipe'));
     });
     updateThemeToggle();
 
