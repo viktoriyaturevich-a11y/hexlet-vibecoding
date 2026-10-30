@@ -170,6 +170,7 @@
         <div class="row"><span>Жиры</span><b id="fat">0 г</b></div>
         <div class="row"><span>Углеводы</span><b id="carbs">0 г</b></div>
         <div class="row"><span>Базовый обмен (в покое)</span><b id="bmr">0 ккал</b></div>
+        <div class="row"><span>Индекс массы тела</span><b id="bmi">0</b></div>
       </div>
       <p class="muted">Расчёт по формуле Миффлина — Сан Жеора. Это ориентир, а не медицинская рекомендация.</p>
     </section>
@@ -198,6 +199,18 @@
     function calcBmr(sex, weight, height, age) {
       const base = 10 * weight + 6.25 * height - 5 * age;
       return sex === 'male' ? base + 5 : base - 161;
+    }
+
+    // Индекс массы тела: вес (кг) / рост (м)². Категории — по классификации ВОЗ.
+    function calcBmi(weight, height) {
+      return weight / (height / 100) ** 2;
+    }
+
+    function bmiCategory(bmi) {
+      if (bmi < 18.5) return 'дефицит веса';
+      if (bmi < 25) return 'норма';
+      if (bmi < 30) return 'избыточный вес';
+      return 'ожирение';
     }
 
     form.addEventListener('submit', (event) => {
@@ -232,6 +245,9 @@
       document.getElementById('fat').textContent = `${fat} г`;
       document.getElementById('carbs').textContent = `${carbs} г`;
       document.getElementById('bmr').textContent = `${Math.round(bmr).toLocaleString('ru-RU')} ккал`;
+      const bmi = calcBmi(weight, height);
+      document.getElementById('bmi').textContent =
+        `${bmi.toLocaleString('ru-RU', { maximumFractionDigits: 1 })} — ${bmiCategory(bmi)}`;
       resultEl.hidden = false;
     });
   </script>
