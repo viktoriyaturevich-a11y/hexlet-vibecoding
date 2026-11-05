@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Курс валют и погода в Москве</title>
+  <style>
+    :root { --bg:#f4f6fa; --card:#fff; --text:#1c2333; --muted:#6b7385; --accent:#2563eb; --err:#b42318; --err-bg:#fdecea; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#12151c; --card:#1c212c; --text:#e8ebf2; --muted:#9aa3b5; --accent:#6ea0ff; --err:#ffb4a9; --err-bg:#3a1d1a; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:24px 16px; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    main { max-width:720px; margin:0 auto; }
+    h1 { font-size:1.5rem; margin:0 0 16px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+    .card { background:var(--card); border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+    .card h2 { font-size:.85rem; font-weight:500; color:var(--muted); margin:0 0 8px; }
+    .value { font-size:1.8rem; font-weight:600; }
+    .sub { font-size:.8rem; color:var(--muted); margin-top:4px; }
+    .errors { margin-bottom:12px; }
+    .error { background:var(--err-bg); color:var(--err); border-radius:8px; padding:10px 14px; margin-bottom:8px; }
+    button { margin-top:16px; padding:10px 20px; font-size:1rem; border:0; border-radius:8px; background:var(--accent); color:#fff; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Курс валют и погода в Москве</h1>
+  <div class="errors" id="errors" role="alert"></div>
+  <div class="grid">
+    <div class="card"><h2>USD (доллар США)</h2><div class="value" id="usd">—</div><div class="sub">руб. за 1 USD, ЦБ РФ</div></div>
+    <div class="card"><h2>EUR (евро)</h2><div class="value" id="eur">—</div><div class="sub">руб. за 1 EUR, ЦБ РФ</div></div>
+    <div class="card"><h2>Температура</h2><div class="value" id="temp">—</div><div class="sub">сейчас в Москве</div></div>
+    <div class="card"><h2>Осадки</h2><div class="value" id="precip">—</div><div class="sub">за последний час</div></div>
+    <div class="card"><h2>Обновлено</h2><div class="value" id="updated" style="font-size:1.3rem">—</div><div class="sub">время запроса данных</div></div>
+  </div>
+  <button id="refresh" type="button">Обновить</button>
+</main>
+
+<script>
+  const CBR_URL = "https://www.cbr-xml-daily.ru/daily_json.js";
+  const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=55.7558&longitude=37.6176" +
+    "&current=temperature_2m,precipitation&timezone=Europe%2FMoscow";
+
+  const $ = (id) => document.getElementById(id);
+
+  async function getJson(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+
+  function showError(text) {
+    const div = document.createElement("div");
+    div.className = "error";
+    div.textContent = text;
+    $("errors").appendChild(div);
+  }
+
+  const fmtRub = (n) => n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₽";
+
+  async function load() {
+    const btn = $("refresh");
+    btn.disabled = true;
+    btn.textContent = "Загрузка…";
+    $("errors").textContent = "";
+
+    const [cbr, weather] = await Promise.allSettled([getJson(CBR_URL), getJson(WEATHER_URL)]);
+    let anyOk = false;
+
+    if (cbr.status === "fulfilled") {
+      try {
+        const v = cbr.value.Valute;
+        $("usd").textContent = fmtRub(v.USD.Value / v.USD.Nominal);
+        $("eur").textContent = fmtRub(v.EUR.Value / v.EUR.Nominal);
+        anyOk = true;
+      } catch (e) {
+        cbr.status = "rejected";
+      }
+    }
+    if (cbr.status === "rejected") {
+      $("usd").textContent = $("eur").textContent = "—";
+      showError("Не удалось получить курс валют от ЦБ РФ. Проверьте интернет и нажмите «Обновить».");
+    }
+
+    if (weather.status === "fulfilled" && weather.value.current) {
+      const c = weather.value.current;
+      $("temp").textContent = Math.round(c.temperature_2m * 10) / 10 + " °C";
+      $("precip").textContent = c.precipitation + " мм";
+      anyOk = true;
+    } else {
+      $("temp").textContent = $("precip").textContent = "—";
+      showError("Не удалось получить погоду от Open-Meteo. Проверьте интернет и нажмите «Обновить».");
+    }
+
+    if (anyOk) $("updated").textContent = new Date().toLocaleString("ru-RU");
+
+    btn.disabled = false;
+    btn.textContent = "Обновить";
+  }
+
+  $("refresh").addEventListener("click", load);
+  load();
+</script>
+</body>
+</html>
